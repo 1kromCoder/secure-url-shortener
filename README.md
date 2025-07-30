@@ -96,3 +96,30 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+
+
+# URL Shortener Backend – NestJS + Prisma
+
+Bu loyiha foydalanuvchilarga URL manzillarni qisqartirish, ularni statistikasi bilan kuzatish, ro‘yxatdan o‘tish, tizimga kirish va chiqish (logout) imkonini beradi. Loyihada `NestJS`, `Prisma`, `PostgreSQL`, `JWT`, `bcrypt`, va `Guards`lardan foydalanilgan.
+
+---
+
+## 📦 O‘rnatish (Setup Steps)
+
+1. Repositoryni klon qiling:
+   ```bash
+   git clone https://github.com/1kromCoder/secure-url-shortener.git
+   cd secure-url-shortener
+2. node.modules larni ornatish 
+   npm install
+3. .env yaratish uni ichiga yozamiz
+  DATABASE_URL=postgresql://username:password@localhost:5432/yourdbname
+4.Prisma migration qilish
+  npx prisma migrate dev --name init
+  npx prisma generate
+
+5. Loyihani ishga tushurish
+   npm run start:dev
+
