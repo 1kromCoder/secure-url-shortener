@@ -6,32 +6,35 @@ import {
   Request,
   Get,
   Param,
-  Res,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { UrlService } from './url.service';
 import { CreateUrlDto } from './dto/create-url.dto';
-import { Response } from 'express';
 import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller()
 export class UrlController {
   constructor(private readonly urlService: UrlService) {}
+
   @UseGuards(AuthGuard)
   @Post('shorten')
   async shorten(@Body() dto: CreateUrlDto, @Request() req: any) {
     const userId = req['user-id'];
     return this.urlService.createShortUrl(dto, userId);
   }
-  @Get('/:shortCode')
-  async redirect(@Param('shortCode') code: string, @Res() res: Response) {
-    const url = await this.urlService.findByShortCode(code);
-    if (!url) throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
 
+  @Get(':shortCode')
+  async redirectToOriginal(@Param('shortCode') code: string) {
+    const url = await this.urlService.findByShortCode(code);
     await this.urlService.incrementVisits(code);
-    return res.redirect(url.originalUrl);
+    return {
+      message: 'Visit oshdi',
+      originalUrl: url.originalUrl,
+      visits: url.visits + 1,
+    };
   }
+
   @UseGuards(AuthGuard)
   @Get('stats/:shortCode')
   async stats(@Param('shortCode') code: string, @Request() req: any) {

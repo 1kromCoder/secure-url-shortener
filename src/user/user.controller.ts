@@ -8,6 +8,7 @@ import {
   Delete,
   Req,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,6 +16,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LoginUserDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -32,9 +34,11 @@ export class UserController {
   refreshToken(@Body() dto: RefreshTokenDto) {
     return this.userService.refresh(dto);
   }
+  @Get()
   findAll() {
     return this.userService.findAll();
   }
+  @UseGuards(AuthGuard)
   @Get('/me')
   me(@Req() req: Request) {
     const userId = req['user-id'];

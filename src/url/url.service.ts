@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -12,9 +13,17 @@ export class UrlService {
 
   async createShortUrl(dto: CreateUrlDto, userId: number) {
     try {
-      const shortCode = this.generateShortCode();
-      const shortUrl = `http://localhost:3000/${shortCode}`;
+      const existingUrl = await this.prisma.url.findFirst({
+        where: {
+          originalUrl: dto.originalUrl,
+          userId: userId,
+        },
+      });
 
+      if (existingUrl) {
+        throw new ConflictException('Bu URL allaqachon qisqartirilgan');
+      }
+      const shortCode = this.generateShortCode();
       const url = await this.prisma.url.create({
         data: {
           originalUrl: dto.originalUrl,
@@ -22,6 +31,8 @@ export class UrlService {
           userId,
         },
       });
+
+      const shortUrl = `http://localhost:3000/${url.shortCode}`;
 
       return {
         shortCode: url.shortCode,
@@ -42,53 +53,42 @@ export class UrlService {
   }
 
   async findByShortCode(code: string) {
-    try {
-      const url = await this.prisma.url.findUnique({
-        where: { shortCode: code },
-      });
+    const url = await this.prisma.url.findUnique({
+      where: { shortCode: code },
+    });
 
-      if (!url) {
-        throw new NotFoundException('Bunday short code mavjud emas');
-      }
-
-      return url;
-    } catch (error) {
-      throw new InternalServerErrorException('Short URLni topishda xatolik');
+    if (!url) {
+      throw new NotFoundException('Bunday short code mavjud emas');
     }
+
+    return url;
   }
 
   async incrementVisits(code: string) {
-    try {
-      return await this.prisma.url.update({
-        where: { shortCode: code },
-        data: { visits: { increment: 1 } },
-      });
-    } catch (error) {
-      throw new InternalServerErrorException('Visitsni oshirishda xatolik');
-    }
+    return this.prisma.url.update({
+      where: { shortCode: code },
+      data: {
+        visits: { increment: 1 },
+      },
+    });
   }
-
   async getStats(code: string, userId: number) {
-    try {
-      const url = await this.prisma.url.findFirst({
-        where: {
-          shortCode: code,
-          userId,
-        },
-        select: {
-          originalUrl: true,
-          createdAt: true,
-          visits: true,
-        },
-      });
+    const url = await this.prisma.url.findFirst({
+      where: {
+        shortCode: code,
+        userId,
+      },
+      select: {
+        originalUrl: true,
+        createdAt: true,
+        visits: true,
+      },
+    });
 
-      if (!url) {
-        throw new NotFoundException('Statistika topilmadi');
-      }
-
-      return url;
-    } catch (error) {
-      throw new InternalServerErrorException('Statistikani olishda xatolik');
+    if (!url) {
+      throw new NotFoundException('Statistika topilmadi');
     }
+
+    return url;
   }
 }

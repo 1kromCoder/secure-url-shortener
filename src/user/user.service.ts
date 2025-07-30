@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class UserService {
@@ -42,6 +43,15 @@ export class UserService {
 
       return newUser;
     } catch (error) {
+      if (error instanceof ConflictException) throw error;
+
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Bu email allaqachon mavjud');
+      }
+
       throw new InternalServerErrorException('Ro‘yxatdan o‘tishda xatolik');
     }
   }
@@ -65,7 +75,7 @@ export class UserService {
 
       const user = await this.findUserByEmail(data.email);
       if (!user) {
-        throw new UnauthorizedException('Foydalanuvchi topilmadi');
+        throw new NotFoundException('Foydalanuvchi mavjud emas');
       }
 
       const match = bcrypt.compareSync(data.password, user.password);
@@ -78,6 +88,13 @@ export class UserService {
 
       return { access_token, refresh_token };
     } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+
       throw new InternalServerErrorException('Kirishda xatolik');
     }
   }
@@ -114,7 +131,9 @@ export class UserService {
       });
 
       if (!existingUser) {
-        throw new NotFoundException('Foydalanuvchi topilmadi');
+        throw new NotFoundException(
+          `Foydalanuvchi ID ${id} bo‘yicha topilmadi`,
+        );
       }
 
       return await this.prisma.user.update({
@@ -132,11 +151,18 @@ export class UserService {
     try {
       const existingUser = await this.prisma.user.findUnique({
         where: { id },
+        include: { urls: true },
       });
 
       if (!existingUser) {
-        throw new NotFoundException('Foydalanuvchi topilmadi');
+        throw new NotFoundException(
+          `Foydalanuvchi ID ${id} bo‘yicha topilmadi`,
+        );
       }
+
+      await this.prisma.url.deleteMany({
+        where: { userId: id },
+      });
 
       return await this.prisma.user.delete({
         where: { id },
