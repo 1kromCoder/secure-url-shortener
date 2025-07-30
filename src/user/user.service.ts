@@ -84,8 +84,12 @@ export class UserService {
       }
 
       const access_token = this.jwt.sign({ id: user.id });
-      const refresh_token = this.jwt.sign({ id: user.id });
+      const refresh_token = this.jwt.sign({ id: user.id }, { expiresIn: '7d' });
 
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: refresh_token },
+      });
       return { access_token, refresh_token };
     } catch (error) {
       if (
@@ -174,11 +178,29 @@ export class UserService {
 
   async refresh(data: RefreshTokenDto) {
     try {
-      const user = this.jwt.verify(data.refreshToken);
+      const payload = this.jwt.verify(data.refreshToken);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.id },
+      });
+
+      if (!user || user.refreshToken !== data.refreshToken) {
+        throw new UnauthorizedException('Yaroqsiz refresh token');
+      }
       const newAccestoken = this.jwt.sign({ id: user.id });
       return { newAccestoken };
     } catch (error) {
       throw new InternalServerErrorException('Token yangilashda xatolik');
+    }
+  }
+  async logout(userId: number) {
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: null },
+      });
+      return { message: 'Logout muvaffaqiyatli bo‘ldi' };
+    } catch (error) {
+      throw new InternalServerErrorException('Logoutda xatolik');
     }
   }
 }

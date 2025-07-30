@@ -52,4 +52,10 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+  @UseGuards(AuthGuard)
+  @Post('logout')
+  logout(@Req() req: Request) {
+    const userId = req['user-id'];
+    return this.userService.logout(userId);
+  }
 }

@@ -3,6 +3,7 @@ CREATE TABLE "public"."User" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
+    "refreshToken" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -13,7 +14,7 @@ CREATE TABLE "public"."Url" (
     "originalUrl" TEXT NOT NULL,
     "shortCode" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "visits" INTEGER NOT NULL,
+    "visits" INTEGER NOT NULL DEFAULT 0,
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "Url_pkey" PRIMARY KEY ("id")
@@ -21,6 +22,9 @@ CREATE TABLE "public"."Url" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Url_shortCode_key" ON "public"."Url"("shortCode");
 
 -- AddForeignKey
 ALTER TABLE "public"."Url" ADD CONSTRAINT "Url_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
